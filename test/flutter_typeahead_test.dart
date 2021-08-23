@@ -51,6 +51,7 @@ class TestPageState extends State<TestPage> {
                     else
                       return [];
                   },
+                  footer: InkWell(),
                   noItemsFoundBuilder: (context) => const SizedBox(),
                   itemBuilder: (context, String suggestion) {
                     return ListTile(

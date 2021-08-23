@@ -83,6 +83,7 @@ class CupertinoTypeAheadFormField<T> extends FormField<String> {
       required SuggestionSelectionCallback<T> onSuggestionSelected,
       required ItemBuilder<T> itemBuilder,
       required SuggestionsCallback<T> suggestionsCallback,
+      required Widget footer,
       double suggestionsBoxVerticalOffset: 5.0,
       this.textFieldConfiguration: const CupertinoTextFieldConfiguration(),
       AnimationTransitionBuilder? transitionBuilder,
@@ -127,6 +128,7 @@ class CupertinoTypeAheadFormField<T> extends FormField<String> {
                   },
                   controller: state._effectiveController,
                 ),
+                footer: footer,
                 suggestionsBoxVerticalOffset: suggestionsBoxVerticalOffset,
                 onSuggestionSelected: onSuggestionSelected,
                 itemBuilder: itemBuilder,
@@ -470,6 +472,8 @@ class CupertinoTypeAheadField<T> extends StatefulWidget {
   /// Defaults to false
   final bool autoFlipDirection;
 
+  final Widget footer;
+
   /// Creates a [CupertinoTypeAheadField]
   CupertinoTypeAheadField(
       {Key? key,
@@ -495,7 +499,8 @@ class CupertinoTypeAheadField<T> extends StatefulWidget {
       this.hideSuggestionsOnKeyboardHide: true,
       this.keepSuggestionsOnLoading: true,
       this.keepSuggestionsOnSuggestionSelected: false,
-      this.autoFlipDirection: false})
+      this.autoFlipDirection: false,
+      required this.footer})
       : assert(animationStart >= 0.0 && animationStart <= 1.0),
         assert(
             direction == AxisDirection.down || direction == AxisDirection.up),
@@ -514,6 +519,7 @@ class _CupertinoTypeAheadFieldState<T> extends State<CupertinoTypeAheadField<T>>
 
   TextEditingController? get _effectiveController =>
       widget.textFieldConfiguration.controller ?? _textEditingController;
+
   FocusNode? get _effectiveFocusNode =>
       widget.textFieldConfiguration.focusNode ?? _focusNode;
   late VoidCallback _focusNodeListener;
@@ -522,8 +528,10 @@ class _CupertinoTypeAheadFieldState<T> extends State<CupertinoTypeAheadField<T>>
 
   // Timer that resizes the suggestion box on each tick. Only active when the user is scrolling.
   Timer? _resizeOnScrollTimer;
+
   // The rate at which the suggestion box will resize when the user is scrolling
   final Duration _resizeOnScrollRefreshRate = const Duration(milliseconds: 500);
+
   // Will have a value if the typeahead is inside a scrollable widget
   ScrollPosition? _scrollPosition;
 
@@ -654,6 +662,7 @@ class _CupertinoTypeAheadFieldState<T> extends State<CupertinoTypeAheadField<T>>
           widget.onSuggestionSelected(selection);
         },
         itemBuilder: widget.itemBuilder,
+        footer: widget.footer,
         direction: _suggestionsBox!.direction,
         hideOnLoading: widget.hideOnLoading,
         hideOnEmpty: widget.hideOnEmpty,
@@ -750,6 +759,7 @@ class _CupertinoTypeAheadFieldState<T> extends State<CupertinoTypeAheadField<T>>
 
 class _SuggestionsList<T> extends StatefulWidget {
   final _CupertinoSuggestionsBox? suggestionsBox;
+  final Widget footer;
   final TextEditingController? controller;
   final bool getImmediateSuggestions;
   final SuggestionSelectionCallback<T>? onSuggestionSelected;
@@ -789,6 +799,7 @@ class _SuggestionsList<T> extends StatefulWidget {
     this.hideOnEmpty,
     this.hideOnError,
     this.keepSuggestionsOnLoading,
+    required this.footer,
   });
 
   @override
@@ -1057,6 +1068,16 @@ class _SuggestionsListState<T> extends State<_SuggestionsList<T>>
   }
 
   Widget createSuggestionsWidget() {
+    List<Widget> children = this._suggestions!.map((T suggestion) {
+      return GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        child: widget.itemBuilder!(context, suggestion),
+        onTap: () {
+          widget.onSuggestionSelected!(suggestion);
+        },
+      );
+    }).toList();
+    children.add(widget.footer);
     Widget child = Container(
       decoration: BoxDecoration(
         color: widget.decoration!.color != null
@@ -1078,16 +1099,9 @@ class _SuggestionsListState<T> extends State<_SuggestionsList<T>>
         shrinkWrap: true,
         reverse: widget.suggestionsBox!.direction == AxisDirection.down
             ? false
-            : true, // reverses the list to start at the bottom
-        children: this._suggestions!.map((T suggestion) {
-          return GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            child: widget.itemBuilder!(context, suggestion),
-            onTap: () {
-              widget.onSuggestionSelected!(suggestion);
-            },
-          );
-        }).toList(),
+            : true,
+        // reverses the list to start at the bottom
+        children: children,
       ),
     );
 

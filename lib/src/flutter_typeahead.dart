@@ -269,6 +269,7 @@ class TypeAheadFormField<T> extends FormField<String> {
       required SuggestionSelectionCallback<T> onSuggestionSelected,
       required ItemBuilder<T> itemBuilder,
       required SuggestionsCallback<T> suggestionsCallback,
+      required Widget footer,
       double suggestionsBoxVerticalOffset: 5.0,
       this.textFieldConfiguration: const TextFieldConfiguration(),
       AnimationTransitionBuilder? transitionBuilder,
@@ -306,6 +307,7 @@ class TypeAheadFormField<T> extends FormField<String> {
                   loadingBuilder: loadingBuilder,
                   debounceDuration: debounceDuration,
                   suggestionsBoxDecoration: suggestionsBoxDecoration,
+                  footer: footer,
                   suggestionsBoxController: suggestionsBoxController,
                   textFieldConfiguration: textFieldConfiguration.copyWith(
                     decoration: textFieldConfiguration.decoration
@@ -660,12 +662,15 @@ class TypeAheadField<T> extends StatefulWidget {
   final bool autoFlipDirection;
   final bool hideKeyboard;
 
+  final Widget footer;
+
   /// Creates a [TypeAheadField]
   TypeAheadField(
       {Key? key,
       required this.suggestionsCallback,
       required this.itemBuilder,
       required this.onSuggestionSelected,
+      required this.footer,
       this.textFieldConfiguration: const TextFieldConfiguration(),
       this.suggestionsBoxDecoration: const SuggestionsBoxDecoration(),
       this.debounceDuration: const Duration(milliseconds: 300),
@@ -704,6 +709,7 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
 
   TextEditingController? get _effectiveController =>
       widget.textFieldConfiguration.controller ?? _textEditingController;
+
   FocusNode? get _effectiveFocusNode =>
       widget.textFieldConfiguration.focusNode ?? _focusNode;
   late VoidCallback _focusNodeListener;
@@ -712,8 +718,10 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
 
   // Timer that resizes the suggestion box on each tick. Only active when the user is scrolling.
   Timer? _resizeOnScrollTimer;
+
   // The rate at which the suggestion box will resize when the user is scrolling
   final Duration _resizeOnScrollRefreshRate = const Duration(milliseconds: 500);
+
   // Will have a value if the typeahead is inside a scrollable widget
   ScrollPosition? _scrollPosition;
 
@@ -832,6 +840,7 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
         noItemsFoundBuilder: widget.noItemsFoundBuilder,
         errorBuilder: widget.errorBuilder,
         transitionBuilder: widget.transitionBuilder,
+        footer: widget.footer,
         suggestionsCallback: widget.suggestionsCallback,
         animationDuration: widget.animationDuration,
         animationStart: widget.animationStart,
@@ -935,6 +944,7 @@ class _TypeAheadFieldState<T> extends State<TypeAheadField<T>>
 
 class _SuggestionsList<T> extends StatefulWidget {
   final _SuggestionsBox? suggestionsBox;
+  final Widget footer;
   final TextEditingController? controller;
   final bool getImmediateSuggestions;
   final SuggestionSelectionCallback<T>? onSuggestionSelected;
@@ -957,6 +967,7 @@ class _SuggestionsList<T> extends StatefulWidget {
   _SuggestionsList({
     required this.suggestionsBox,
     this.controller,
+    required this.footer,
     this.getImmediateSuggestions: false,
     this.onSuggestionSelected,
     this.suggestionsCallback,
@@ -1224,22 +1235,25 @@ class _SuggestionsListState<T> extends State<_SuggestionsList<T>>
   }
 
   Widget createSuggestionsWidget() {
+    List<Widget> children = this._suggestions!.map((T suggestion) {
+      return InkWell(
+        child: widget.itemBuilder!(context, suggestion),
+        onTap: () {
+          widget.onSuggestionSelected!(suggestion);
+        },
+      );
+    }).toList();
+    children.add(widget.footer);
+
     Widget child = ListView(
       padding: EdgeInsets.zero,
       primary: false,
       shrinkWrap: true,
       controller: _scrollController,
-      reverse: widget.suggestionsBox!.direction == AxisDirection.down
-          ? false
-          : true, // reverses the list to start at the bottom
-      children: this._suggestions!.map((T suggestion) {
-        return InkWell(
-          child: widget.itemBuilder!(context, suggestion),
-          onTap: () {
-            widget.onSuggestionSelected!(suggestion);
-          },
-        );
-      }).toList(),
+      reverse:
+          widget.suggestionsBox!.direction == AxisDirection.down ? false : true,
+      // reverses the list to start at the bottom
+      children: children,
     );
 
     if (widget.decoration!.hasScrollbar) {

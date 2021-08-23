@@ -58,6 +58,7 @@ class NavigationExample extends StatelessWidget {
             suggestionsCallback: (pattern) async {
               return await BackendService.getSuggestions(pattern);
             },
+            footer: Container(),
             itemBuilder: (context, Map<String, String> suggestion) {
               return ListTile(
                 leading: Icon(Icons.shopping_cart),
@@ -104,6 +105,7 @@ class _FormExampleState extends State<FormExample> {
               suggestionsCallback: (pattern) {
                 return CitiesService.getSuggestions(pattern);
               },
+              footer: Container(),
               itemBuilder: (context, String suggestion) {
                 return ListTile(
                   title: Text(suggestion),
@@ -163,6 +165,7 @@ class ScrollExample extends StatelessWidget {
               border: OutlineInputBorder(),
               hintText: 'What are you looking for?'),
         ),
+        footer: Container(),
         suggestionsCallback: (String pattern) async {
           return items
               .where((item) =>

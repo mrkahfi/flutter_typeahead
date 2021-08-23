@@ -52,6 +52,7 @@ class _FavoriteCitiesPage extends State<FavoriteCitiesPage> {
                   () => CitiesService.getSuggestions(pattern),
                 );
               },
+              footer: Container(),
               itemBuilder: (context, String suggestion) {
                 return Padding(
                   padding: const EdgeInsets.all(4.0),
